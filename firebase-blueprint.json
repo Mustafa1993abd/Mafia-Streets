@@ -1,0 +1,215 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a player in the game.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "cleanMoney": { "type": "number" },
+        "dirtyMoney": { "type": "number" },
+        "bankBalance": { "type": "number" },
+        "level": { "type": "number" },
+        "health": { "type": "number" },
+        "isImprisoned": { "type": "boolean" },
+        "role": { "type": "string" }
+      },
+      "required": ["uid", "displayName"]
+    },
+    "Inventory": {
+      "title": "Inventory",
+      "description": "Represents a player's inventory.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "items": { "type": "array" }
+      },
+      "required": ["userId"]
+    },
+    "Contact": {
+      "title": "Contact",
+      "description": "A saved contact in a player's phone.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "contactId": { "type": "string" },
+        "name": { "type": "string" },
+        "phoneNumber": { "type": "string" }
+      },
+      "required": ["userId", "name", "phoneNumber"]
+    },
+    "NewsPost": {
+      "title": "NewsPost",
+      "description": "A post in the virtual news feed.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "image": { "type": "string" },
+        "type": { "type": "string", "enum": ["kill", "new_player", "news", "newspaper"] },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "type"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A message in the global chat.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPhoto": { "type": "string" },
+        "senderRole": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "senderName", "text", "timestamp"]
+    },
+    "MallData": {
+      "title": "MallData",
+      "description": "Represents a player's progress and data in the City Mall.",
+      "type": "object",
+      "properties": {
+        "luxuryLevel": { "type": "number" },
+        "totalSpent": { "type": "number" },
+        "purchasedIds": { "type": "array" },
+        "loyaltyPoints": { "type": "number" }
+      }
+    },
+    "MallImage": {
+      "title": "MallImage",
+      "description": "Cached AI-generated images for mall products.",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string" },
+        "createdAt": { "type": "number" }
+      }
+    },
+    "MarketTrend": {
+      "title": "MarketTrend",
+      "description": "AI-generated market analysis and trends.",
+      "type": "object",
+      "properties": {
+        "itemType": { "type": "string" },
+        "averagePrice": { "type": "number" },
+        "demandLevel": { "type": "string" },
+        "supplyLevel": { "type": "string" },
+        "aiRecommendation": { "type": "string" },
+        "lastUpdated": { "type": "number" }
+      }
+    },
+    "MarketListing": {
+      "title": "MarketListing",
+      "description": "An item listed for sale by a player.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "itemType": { "type": "string" },
+        "quantity": { "type": "number" },
+        "price": { "type": "number" },
+        "quality": { "type": "string", "enum": ["normal", "good", "rare", "legendary"] },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["sellerId", "itemType", "quantity", "price"]
+    },
+    "TradeContract": {
+      "title": "TradeContract",
+      "description": "A request for specific resources.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "requesterId": { "type": "string" },
+        "requesterName": { "type": "string" },
+        "itemType": { "type": "string" },
+        "quantity": { "type": "number" },
+        "quality": { "type": "string", "enum": ["normal", "good", "rare", "legendary"] },
+        "reward": { "type": "number" },
+        "status": { "type": "string", "enum": ["open", "accepted", "completed"] },
+        "executorId": { "type": "string" },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["requesterId", "itemType", "quantity", "reward"]
+    },
+    "CustomProduct": {
+      "title": "CustomProduct",
+      "description": "A custom product added by an admin to the market.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "image": { "type": "string" },
+        "category": { "type": "string" },
+        "specs": { "type": "string" },
+        "power": { "type": "number" },
+        "price": { "type": "number" },
+        "hidden": { "type": "boolean" },
+        "rare": { "type": "boolean" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["name", "type", "category", "price"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "User profile data."
+    },
+    "/mall_data/{userId}": {
+      "schema": { "$ref": "MallData" },
+      "description": "User's data in the City Mall."
+    },
+    "/mall_images/{productId}": {
+      "schema": { "$ref": "MallImage" },
+      "description": "Cached images for mall products."
+    },
+    "/users/{userId}/contacts/{contactId}": {
+      "schema": { "$ref": "Contact" },
+      "description": "User's saved contacts."
+    },
+    "/news_posts/{postId}": {
+      "schema": { "$ref": "NewsPost" },
+      "description": "Global news feed posts."
+    },
+    "/inventories/{userId}": {
+      "schema": { "$ref": "Inventory" },
+      "description": "Player inventory data."
+    },
+    "/global_chat/{messageId}": {
+      "schema": { "$ref": "ChatMessage" },
+      "description": "Global chat messages."
+    },
+    "/messages/{messageId}": {
+      "schema": "object",
+      "description": "Private messages between players."
+    },
+    "/gangs/{gangId}": {
+      "schema": "object",
+      "description": "Gang data."
+    },
+    "/government/{docId}": {
+      "schema": "object",
+      "description": "Government and ministerial data."
+    },
+    "/market_listings/{listingId}": {
+      "schema": { "$ref": "MarketListing" },
+      "description": "Items listed for sale in the market."
+    },
+    "/trade_contracts/{contractId}": {
+      "schema": { "$ref": "TradeContract" },
+      "description": "Trade contracts and requests."
+    },
+    "/market_trends/{trendId}": {
+      "schema": { "$ref": "MarketTrend" },
+      "description": "AI market analysis data."
+    },
+    "/custom_products/{productId}": {
+      "schema": { "$ref": "CustomProduct" },
+      "description": "Custom products added by admins."
+    }
+  }
+}

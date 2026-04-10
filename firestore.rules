@@ -1,0 +1,276 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required) - User's unique ID
+    //   - displayName: string (required, 1-50 chars) - Player's name
+    //   - email: string (required, email format) - User's email
+    //   - role: string (required) - User's role
+    //   - cleanMoney: number (required, >= 0) - Player's clean money
+    //   - dirtyMoney: number (required, >= 0) - Player's dirty money
+    //   - bankBalance: number (required, >= 0) - Player's bank balance
+    //   - health: number (required, 0-100) - Player's health
+    //   - isImprisoned: bool (required) - Imprisonment status
+    //   - createdAt: timestamp (required) - Account creation time
+    //
+    // Collection: users_public
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - displayName: string (required)
+    //   - wealth: number (required)
+    //
+    // Collection: news_posts
+    // Document ID: {postId}
+    // Fields:
+    //   - title: string (required)
+    //   - content: string (required)
+    //   - type: string (required)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: global_chat
+    // Document ID: {messageId}
+    // Fields:
+    //   - senderId: string (required)
+    //   - senderName: string (required)
+    //   - text: string (required)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: mall_data
+    // Document ID: {userId}
+    // Fields:
+    //   - luxuryLevel: number
+    //   - totalSpent: number
+    //   - purchasedIds: array
+    //   - loyaltyPoints: number
+    //
+    // Collection: mall_images
+    // Document ID: {productId}
+    // Fields:
+    //   - url: string
+    //   - createdAt: number
+    //
+    // Collection: market_listings
+    // Document ID: {listingId}
+    // Fields:
+    //   - sellerId: string
+    //   - itemType: string
+    //   - quantity: number
+    //   - price: number
+    //
+    // Collection: trade_contracts
+    // Document ID: {contractId}
+    // Fields:
+    //   - requesterId: string
+    //   - itemType: string
+    //   - quantity: number
+    //   - reward: number
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        ('email' in request.auth.token && (
+          request.auth.token.email == "soft4net2016@gmail.com" ||
+          request.auth.token.email == "m07821779969@gmail.com" ||
+          request.auth.token.email == "imvu2024k@gmail.com" ||
+          request.auth.token.email == "zoomnet5@gmail.com"
+        )) ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin')
+      );
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow list: if isAdmin() || (isAuthenticated() && 'email' in request.auth.token && resource.data.email == request.auth.token.email);
+      allow get: if isOwner(userId) || isAdmin();
+      allow create: if isAdmin() || (isAuthenticated() && request.auth.uid == userId &&
+                       hasOnlyAllowedFields(['uid', 'displayName', 'email', 'role', 'cleanMoney', 'dirtyMoney', 'bankBalance', 'health', 'isImprisoned', 'createdAt', 'level', 'reputation', 'gymStats', 'energy', 'maxEnergy', 'lastEnergyUpdate', 'fatigue', 'heat', 'wanted', 'wantedStars', 'bounty', 'jailTimeEnd', 'warrants', 'policeRank', 'govRank', 'familyGymLevel', 'lastFamilyGymTime', 'equipped', 'inventory', 'family', 'agents', 'land', 'ownedTiles', 'builtProperties', 'crew', 'gangLevel', 'properties', 'gangMembers', 'familyMembers', 'city', 'vehicles', 'nameChangeHistory', 'countryChangeHistory', 'welcomeMessageSeen', 'lastLoginAt', 'hasESim', 'gender', 'photoURL', 'birthdate', 'country', 'motto', 'alias', 'nickname', 'visaCard', 'lastTravelAt', 'travelingUntil', 'documents', 'investments', 'crimes', 'power', 'defense', 'mafiaRelationships', 'gymLevel', 'armorHealth', 'lastTrainAt', 'hospitalizedUntil', 'lastActive', 'killedBy', 'lastEducationTime', 'education', 'managedPropertyId', 'salary', 'age', 'phoneNumber', 'phoneWallpaper', 'familyFinances', 'activeMission', 'currentCity', 'ministerRole', 'lastDailyRewardClaim', 'dailyRewardDay', 'lastBigChestClaim', 'lastSpinDate', 'influence', 'inSafeHouse']) &&
+                       request.resource.data.uid == userId &&
+                       isValidEmail(request.resource.data.email));
+      allow update: if isAdmin() || (isAuthenticated() &&
+                       request.resource.data.uid == userId &&
+                       request.resource.data.createdAt == resource.data.createdAt);
+      allow delete: if isAdmin();
+    }
+
+    match /users_public/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /news_posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /global_chat/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.senderId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /messages/{messageId} {
+      allow list: if isAdmin() || (isAuthenticated() && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId || resource.data.receiverId == 'all'));
+      allow get: if isAdmin() || (isAuthenticated() && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId || resource.data.receiverId == 'all'));
+      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.senderId == request.auth.uid);
+      allow update, delete: if isAdmin() || (isAuthenticated() && (request.auth.uid == resource.data.senderId || request.auth.uid == resource.data.receiverId));
+    }
+
+    match /gift_notifications/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.recipientId;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && request.auth.uid == resource.data.recipientId;
+    }
+
+    match /kills/{killId} {
+      allow list: if isAdmin() || isAuthenticated();
+      allow get: if isAuthenticated();
+      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.attackerId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    match /gangs/{gangId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /government/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /ministry_logs/{logId} {
+      allow list: if isAdmin() || isAuthenticated();
+      allow get: if isAuthenticated();
+      allow create: if isAdmin() || isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    match /active_calls/{callId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    match /transfer_history/{historyId} {
+      allow list: if isAdmin() || isAuthenticated();
+      allow get: if isAuthenticated();
+      allow create: if isAdmin() || isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    match /prison_messages/{messageId} {
+      allow list: if isAdmin() || isAuthenticated();
+      allow get: if isAuthenticated();
+      allow create: if isAdmin() || isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    match /constitution/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /bounties/{bountyId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    match /heists/{heistId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAuthenticated();
+    }
+
+    match /city_overrides/{overrideId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /market_overrides/{overrideId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /server_settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /users/{userId}/contacts/{contactId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /users/{userId}/blocked_users/{blockedId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /users/{userId}/call_logs/{logId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /mall_data/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /mall_images/{productId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    match /custom_products/{productId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /market_listings/{listingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.sellerId == request.auth.uid;
+      allow update, delete: if isAdmin() || (isAuthenticated() && resource.data.sellerId == request.auth.uid);
+    }
+
+    match /trade_contracts/{contractId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.requesterId == request.auth.uid;
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin() || (isAuthenticated() && resource.data.requesterId == request.auth.uid);
+    }
+
+    match /market_trends/{trendId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}
